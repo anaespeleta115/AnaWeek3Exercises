@@ -172,7 +172,7 @@ Here is the code to read in the data. We do this a little differently than usual
 
 ```{r cache=TRUE}
 data_site <- 
-  "https://www.macalester.edu/~dshuman1/data/112/2014-Q4-Trips-History-Data-Small.rds" 
+  "https://www.macalester.edu/~dshuman1/data/112/2014-Q4-Trips-History-Data.rds" 
 Trips <- readRDS(gzcon(url(data_site)))
 Stations<-read_csv("http://www.macalester.edu/~dshuman1/data/112/DC-Stations.csv")
 ```
@@ -218,11 +218,15 @@ Trips %>%
   
   10. Facet your graph from exercise 8. by day of the week. Is there a pattern?
   
+>The pattern observed is that the density (amount of bike rentals) is much higher in the hours in which people are going and coming to work during the weekdays. On the weekends, the density is higher during times when people 
+  
 ```{r}
-Trips %>%
-  group_by(sdate) %>%
+Trips %>% 
+  mutate(rent_hour = hour(sdate)) %>%
   mutate(week_day = wday(sdate, label = TRUE)) %>% 
-  ggplot(aes(x = week_day)) +
+  mutate(rent_min = minute(sdate)) %>% 
+  mutate(rent_time = rent_hour+(rent_min/60)) %>% 
+  ggplot(aes(x = rent_time))+
   geom_density()+
   facet_wrap(vars(week_day))
 ```
@@ -232,22 +236,26 @@ The variable `client` describes whether the renter is a regular user (level `Reg
   11. Change the graph from exercise 10 to set the `fill` aesthetic for `geom_density()` to the `client` variable. You should also set `alpha = .5` for transparency and `color=NA` to suppress the outline of the density function.
   
 ```{r}
-Trips %>%
-  group_by(sdate) %>%
-  mutate(week_day = wday(sdate, label= TRUE)) %>% 
-  ggplot(aes(x = week_day)) +
-  geom_density(aes(fill = client, alpha = .5, color = "NA"))+
+Trips %>% 
+  mutate(rent_hour = hour(sdate)) %>%
+  mutate(week_day = wday(sdate, label = TRUE)) %>% 
+  mutate(rent_min = minute(sdate)) %>% 
+  mutate(rent_time = rent_hour+(rent_min/60)) %>% 
+  ggplot(aes(x = rent_time))+
+  geom_density(aes(fill = client), color = NA, alpha = .5)+
   facet_wrap(vars(week_day))
 ```
 
   12. Change the previous graph by adding the argument `position = position_stack()` to `geom_density()`. In your opinion, is this better or worse in terms of telling a story? What are the advantages/disadvantages of each?
   
 ```{r}
-Trips %>%
-  group_by(sdate) %>%
+Trips %>% 
+  mutate(rent_hour = hour(sdate)) %>%
   mutate(week_day = wday(sdate, label = TRUE)) %>% 
-  ggplot(aes(x = week_day)) +
-  geom_density(aes(fill = client, alpha = .5, color = "NA"), position = position_stack())+
+  mutate(rent_min = minute(sdate)) %>% 
+  mutate(rent_time = rent_hour+(rent_min/60)) %>% 
+  ggplot(aes(x = rent_time))+
+  geom_density(aes(fill = client), color = NA, alpha = .5, position = position_stack())+
   facet_wrap(vars(week_day))
 ```
   
@@ -257,14 +265,14 @@ Trips %>%
   
 ```{r}
 Trips %>%
-  group_by(sdate) %>%
+  mutate(rent_hour = hour(sdate)) %>%
   mutate(week_day = wday(sdate, label = TRUE)) %>% 
+  mutate(rent_min = minute(sdate)) %>% 
+  mutate(rent_time = rent_hour+(rent_min/60)) %>% 
   mutate(weekend = ifelse(week_day == "Sat" | week_day == "Sun", "weekend", "weekday")) %>% 
-  ggplot(aes(x = week_day)) +
-  geom_density(aes(fill = client, alpha = .5, color = "NA"))+
+  ggplot(aes(x = rent_time)) +
+  geom_density(aes(fill = client), color = NA, alpha = .5)+
   facet_wrap(vars(weekend))
-
-  
 ```
   
   14. Change the graph from the previous problem to facet on `client` and fill with `weekday`. What information does this graph tell you that the previous didn't? Is one graph better than the other?
@@ -273,11 +281,13 @@ Trips %>%
   
 ```{r}
 Trips %>%
-  group_by(sdate) %>%
+  mutate(rent_hour = hour(sdate)) %>%
   mutate(week_day = wday(sdate, label = TRUE)) %>% 
-  mutate(weekend = ifelse(week_day == "Sat" || week_day == "Sun", "weekend", "weekday")) %>% 
-  ggplot(aes(x = week_day)) +
-  geom_density(aes(fill = week_day, alpha = .5))+
+  mutate(rent_min = minute(sdate)) %>% 
+  mutate(rent_time = rent_hour+(rent_min/60)) %>% 
+  mutate(weekend = ifelse(week_day == "Sat" | week_day == "Sun", "weekend", "weekday")) %>% 
+  ggplot(aes(x = rent_time, color = "NA")) +
+  geom_density(aes(fill = weekend), color = NA, alpha = .5)+
   facet_wrap(vars(client))
 ```
   
@@ -286,18 +296,28 @@ Trips %>%
   15. Use the latitude and longitude variables in `Stations` to make a visualization of the total number of departures from each station in the `Trips` data. Use either color or size to show the variation in number of departures. We will improve this plot next week when we learn about maps!
   
 ```{r}
-#Stations %>% 
-  #select(name, lat, long) %>% 
-  #ggplot(aes(x = lat, y = long, fill = sstation))
+Trips %>% 
+  group_by(sstation) %>% 
+  summarize(count_station = n()) %>%
+  left_join(Stations,
+            by = c("sstation" = "name")) %>% 
+  ggplot(aes(x = lat, y = long, color = count_station)) +
+  geom_point()
   
 ```
-  
+
   16. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? (Again, we'll improve this next week when we learn about maps).
   
 ```{r}
-
-
-
+Trips %>% 
+  group_by(sstation) %>% 
+  mutate(binary = ifelse(client == "Casual", 1, 0)) %>% 
+  summarise(prop = mean(binary),
+            count_station = n()) %>% 
+  left_join(Stations,
+            by = c("sstation" = "name")) %>% 
+  ggplot(aes(x = lat, y = long, color = prop)) +
+  geom_point()
 ```
   
 **DID YOU REMEMBER TO GO BACK AND CHANGE THIS SET OF EXERCISES TO THE LARGER DATASET? IF NOT, DO THAT NOW.**
@@ -307,25 +327,59 @@ Trips %>%
 In this section, we'll use the data from 2022-02-01 Tidy Tuesday. If you didn't use that data or need a little refresher on it, see the [website](https://github.com/rfordatascience/tidytuesday/blob/master/data/2022/2022-02-01/readme.md).
 
   17. The final product of this exercise will be a graph that has breed on the y-axis and the sum of the numeric ratings in the `breed_traits` dataset on the x-axis, with a dot for each rating. First, create a new dataset called `breed_traits_total` that has two variables -- `Breed` and `total_rating`. The `total_rating` variable is the sum of the numeric ratings in the `breed_traits` dataset (we'll use this dataset again in the next problem). Then, create the graph just described. Omit Breeds with a `total_rating` of 0 and order the Breeds from highest to lowest ranked. You may want to adjust the `fig.height` and `fig.width` arguments inside the code chunk options (eg. `{r, fig.height=8, fig.width=4}`) so you can see things more clearly - check this after you knit the file to assure it looks like what you expected.
+  
+ 
 
-```{r}
-breed_traits_total <- breed_traits %>% 
-  mutate(total_rating = rowsum(.[2:7]))
+```{r, fig.height=12, fig.width=4}
+breed_traits_total <- breed_traits %>%
+  mutate(rank_total = rowSums(.[2:7]) + rowSums(.[10:17])) %>% 
+  select(Breed, rank_total) %>% 
+  filter(rank_total != 0)
   
-  
+
+ggplot(breed_traits_total, aes(y = fct_reorder(Breed, rank_total, .desc = TRUE), x = rank_total))+
+geom_point()
+
 
 ```
 
   18. The final product of this exercise will be a graph with the top-20 dogs in total ratings (from previous problem) on the y-axis, year on the x-axis, and points colored by each breed's ranking for that year (from the `breed_rank_all` dataset). The points within each breed will be connected by a line, and the breeds should be arranged from the highest median rank to lowest median rank ("highest" is actually the smallest numer, eg. 1 = best). After you're finished, think of AT LEAST one thing you could you do to make this graph better. HINTS: 1. Start with the `breed_rank_all` dataset and pivot it so year is a variable. 2. Use the `separate()` function to get year alone, and there's an extra argument in that function that can make it numeric. 3. For both datasets used, you'll need to `str_squish()` Breed before joining. 
   
 ```{r}
+breed_rank_all %>% 
+  pivot_longer(cols = starts_with("20"),
+               names_to = "year",
+               values_to = "value") %>% 
+  separate(year, 
+           into = c("year"),
+           convert = TRUE)  
+
+  #str_squish("Breed")
+  #left_join(breed_traits_total,
+            #by = "Breed")
 
 ```
   
   19. Create your own! Requirements: use a `join` or `pivot` function (or both, if you'd like), a `str_XXX()` function, and a `fct_XXX()` function to create a graph using any of the dog datasets. One suggestion is to try to improve the graph you created for the Tidy Tuesday assignment. If you want an extra challenge, find a way to use the dog images in the `breed_rank_all` file - check out the `ggimage` library and [this resource](https://wilkelab.org/ggtext/) for putting images as labels.
   
 ```{r}
+breed_traits_modeling <- breed_traits %>%
+  filter(`Coat Length` %in% c("Medium", "Long"), `Coat Type` %in% c("Smooth", "Silky")) %>% 
+  mutate(desirable_traits = rowSums(.[c(10,13,14)])) %>% 
+  select(Breed, desirable_traits)
+breed_traits_modeling
+breed_traits_total
 
+breed_traits_total %>% 
+  right_join(breed_traits_modeling) %>% 
+  mutate(Breed_upper = str_to_upper(Breed)) %>% 
+  ggplot(aes(x = rank_total, y = desirable_traits))+
+  geom_point(aes(color = Breed_upper))
+  
+
+
+ 
+  
 ```
   
 ## GitHub link
