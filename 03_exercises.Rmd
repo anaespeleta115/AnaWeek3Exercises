@@ -94,10 +94,10 @@ garden_harvest %>%
 
   2. Summarize the `garden_harvest` data to find the total harvest in pound for each vegetable variety and then try adding the plot from the `garden_planting` table. This will not turn out perfectly. What is the problem? How might you fix it?
 
->The parameters vegetable and variety are not unique identifiers, so we get many more rows after the mutating join. Certain varieties were planted in different plots, but there was only one harvest recorded for each variety, meaning that the total harvest by variety would overestimate the amount.
->We could fix this by defining a variable to hold the list of plots that each vegetable variety was planted in. This way we would only have one observation mapped to the total harvest for that variety.
+>Certain varieties were planted in different plots, but there was only one harvest recorded for each variety, meaning that the total harvest by variety would overestimate the amount.
+We could fix this by defining a variable to hold the list of plots that each vegetable variety was planted in. This way we would only have one observation mapped to the total harvest for that variety.
 
-We can fix this by defining another varible that might identify each indivudal observation better.
+
 
 ```{r}
 garden_harvest %>% 
@@ -110,7 +110,7 @@ garden_harvest %>%
 
   3. I would like to understand how much money I "saved" by gardening, for each vegetable type. Describe how I could use the `garden_harvest` and `garden_spending` datasets, along with data from somewhere like [this](https://products.wholefoodsmarket.com/search?sort=relevance&store=10542) to answer this question. You can answer this in words, referencing various join functions. You don't need R code but could provide some if it's helpful.
 
-> (1) Group each dataset by vegetable. (2) Create a new varible to summarize the total cost of planting each vegetable. (3) use left_join?? (4) Multiply the in-store price by the number of lbs harvested (taken from garden harvest) to get the total price of buying each vegetable type. (5) Compute the difference between the total cost of buying the produce and the total cost of buying the seeds for each one tp get the money saved by planting seeds.
+> (1) Group each dataset by vegetable. (2) In a the garden harvest dataset create a new variable to summarize the total cost of planting each vegetable. (3) Left join the store data and the spending data by vegetable (4) Multiply the in-store price by the number of lbs harvested (taken from garden harvest) to get the total price of buying each vegetable type. (5) Compute the difference between the total cost of buying the produce and the total cost of buying the seeds for each one to get the money saved by planting seeds.
 
 
   4. Subset the data to tomatoes. Reorder the tomato varieties from smallest to largest first harvest date. Create a barplot of total harvest in pounds for each variety, in the new order.CHALLENGE: add the date near the end of the bar. (This is probably not a super useful graph because it's difficult to read. This is more an exercise in using some of the functions you just learned.)
@@ -123,7 +123,8 @@ garden_harvest %>%
   summarise(first_plant_date = min(date), 
             tot_harvest = sum(weight_lbs)) %>%
 ggplot(aes(x = tot_harvest, y = fct_reorder(variety, first_plant_date)))+
-geom_col()
+geom_col()+
+  labs(title = "Total Tomato Harvest by First Harvest Date", y = "Tomato Variety" , x = "")
   
 ```
 
@@ -188,7 +189,8 @@ It's natural to expect that bikes are rented more at some times of day, some day
 ```{r}
 Trips %>%
   ggplot(aes(x = sdate)) +
-  geom_density()
+  geom_density()+
+  labs(title = "Density of Bike Rentals by Rental Start Date", x = "", y ="")
 ```
   
   8. A density plot of the events versus time of day.  You can use `mutate()` with `lubridate`'s  `hour()` and `minute()` functions to extract the hour of the day and minute within the hour from `sdate`. Hint: A minute is 1/60 of an hour, so create a variable where 3:30 is 3.5 and 3:45 is 3.75.
@@ -200,7 +202,8 @@ Trips %>%
   mutate(rent_min = minute(sdate)) %>% 
   mutate(rent_time = rent_hour+(rent_min/60)) %>% 
   ggplot(aes(x = rent_time))+
-  geom_density()
+  geom_density()+
+  labs(title = "Density of Bike Rentals by Rental Hour", x = "Time (hour)", y ="")
   
   
 ```
@@ -212,13 +215,14 @@ Trips %>%
   group_by(sdate) %>%
   mutate(week_day = wday(sdate, label = TRUE)) %>% 
   ggplot(aes(y = week_day)) +
-  geom_bar()
+  geom_bar()+
+  labs(title = "Total Bike Rentals by Day of the Week", y = "", x ="")
 
 ```
   
   10. Facet your graph from exercise 8. by day of the week. Is there a pattern?
   
->The pattern observed is that the density (amount of bike rentals) is much higher in the hours in which people are going and coming to work during the weekdays. On the weekends, the density is higher during times when people 
+>The pattern observed is that the density (amount of bike rentals) is much higher in the hours in which people are going and coming to work during the weekdays. On the weekends, the density is higher during times when people go on leisure bike rides (afternoon).
   
 ```{r}
 Trips %>% 
@@ -228,7 +232,8 @@ Trips %>%
   mutate(rent_time = rent_hour+(rent_min/60)) %>% 
   ggplot(aes(x = rent_time))+
   geom_density()+
-  facet_wrap(vars(week_day))
+  facet_wrap(vars(week_day))+
+  labs(title = "Density of Bike Rentals by Time of Day and Day of the Week", y = "", x ="Time of Day")
 ```
   
 The variable `client` describes whether the renter is a regular user (level `Registered`) or has not joined the bike-rental organization (`Causal`). The next set of exercises investigate whether these two different categories of users show different rental behavior and how `client` interacts with the patterns you found in the previous exercises. 
@@ -243,7 +248,9 @@ Trips %>%
   mutate(rent_time = rent_hour+(rent_min/60)) %>% 
   ggplot(aes(x = rent_time))+
   geom_density(aes(fill = client), color = NA, alpha = .5)+
-  facet_wrap(vars(week_day))
+  facet_wrap(vars(week_day))+
+  labs(title = "Density of Bike Rentals by Time of Day and Day of the Week", y = "", x ="")
+  
 ```
 
   12. Change the previous graph by adding the argument `position = position_stack()` to `geom_density()`. In your opinion, is this better or worse in terms of telling a story? What are the advantages/disadvantages of each?
@@ -256,10 +263,12 @@ Trips %>%
   mutate(rent_time = rent_hour+(rent_min/60)) %>% 
   ggplot(aes(x = rent_time))+
   geom_density(aes(fill = client), color = NA, alpha = .5, position = position_stack())+
-  facet_wrap(vars(week_day))
+  facet_wrap(vars(week_day))+
+  labs(title = "Density of Bike Rentals by Time of Day and Client Status", y = "", x ="")
+  
 ```
   
-  >I like this display better because you can clearly differentiate the patterns between registered and casual clients. However, I think it could also be confusing to interpret because one might think that the upper color only encompases the area of that color and not the total colored area below it.
+>I think the second version can be problematic because it only shows the difference between the client status visually, meaning we cannot clearly see the desities for each one individually. However, we can observe the total density, as both variables are grouped together, so this might be advantageous at certain points.
   
   13. In this graph, go back to using the regular density plot (without `position = position_stack()`). Add a new variable to the dataset called `weekend` which will be "weekend" if the day is Saturday or Sunday and  "weekday" otherwise (HINT: use the `ifelse()` function and the `wday()` function from `lubridate`). Then, update the graph from the previous problem by faceting on the new `weekend` variable. 
   
@@ -272,12 +281,15 @@ Trips %>%
   mutate(weekend = ifelse(week_day == "Sat" | week_day == "Sun", "weekend", "weekday")) %>% 
   ggplot(aes(x = rent_time)) +
   geom_density(aes(fill = client), color = NA, alpha = .5)+
-  facet_wrap(vars(weekend))
+  facet_wrap(vars(weekend))+
+  labs(title = "Density of Bike Rentals by Time of Day and Client Status, 
+       Faceted by Weekend and Weekday", y = "", x ="", color = "Client Status")
+
 ```
   
   14. Change the graph from the previous problem to facet on `client` and fill with `weekday`. What information does this graph tell you that the previous didn't? Is one graph better than the other?
   
-  >It tell us how the client and non-client rentals fluctuate throughout the week in separate plots. It also does not group by weekend date, so we can compare the two plots more easily.
+  >It tells us how the registered and casual rentals fluctuate throughout the week in separate plots. Both plots show us the exact same information, only the facet and color variables are switched.
   
 ```{r}
 Trips %>%
@@ -288,7 +300,8 @@ Trips %>%
   mutate(weekend = ifelse(week_day == "Sat" | week_day == "Sun", "weekend", "weekday")) %>% 
   ggplot(aes(x = rent_time, color = "NA")) +
   geom_density(aes(fill = weekend), color = NA, alpha = .5)+
-  facet_wrap(vars(client))
+  facet_wrap(vars(client))+
+  labs(title = "Density of Bike Rentals by Time of Day and Day of Week", y = "", x ="")
 ```
   
 ### Spatial patterns
@@ -302,22 +315,26 @@ Trips %>%
   left_join(Stations,
             by = c("sstation" = "name")) %>% 
   ggplot(aes(x = lat, y = long, color = count_station)) +
-  geom_point()
+  geom_point()+
+  labs(title = "Total Number of Bike Departures by Station", y = "Latitude", x ="Longitud", color = "Number of Rentals")
+  
   
 ```
 
   16. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? (Again, we'll improve this next week when we learn about maps).
   
+>The highest percentage of casual users are in areas where there are a lot of rentals in general (a central location that is convenient for renting a bike), or in an isolated area, meaning there could be a park or a scenic route where people go on leisure rides.
+  
 ```{r}
 Trips %>% 
   group_by(sstation) %>% 
   mutate(binary = ifelse(client == "Casual", 1, 0)) %>% 
-  summarise(prop = mean(binary),
-            count_station = n()) %>% 
+  summarise(prop = mean(binary)) %>% 
   left_join(Stations,
             by = c("sstation" = "name")) %>% 
   ggplot(aes(x = lat, y = long, color = prop)) +
-  geom_point()
+  geom_point()+
+  labs(title = "Proportion of Bike Departures by Station", y = "Latitude", x ="Longitude", color = "Proportion of Casual Rentals", )
 ```
   
 **DID YOU REMEMBER TO GO BACK AND CHANGE THIS SET OF EXERCISES TO THE LARGER DATASET? IF NOT, DO THAT NOW.**
@@ -338,31 +355,48 @@ breed_traits_total <- breed_traits %>%
   
 
 ggplot(breed_traits_total, aes(y = fct_reorder(Breed, rank_total, .desc = TRUE), x = rank_total))+
-geom_point()
+geom_point()+
+  labs(title = "Total Ranking by Dog Breed", x= "", y = "")
+
 
 
 ```
 
   18. The final product of this exercise will be a graph with the top-20 dogs in total ratings (from previous problem) on the y-axis, year on the x-axis, and points colored by each breed's ranking for that year (from the `breed_rank_all` dataset). The points within each breed will be connected by a line, and the breeds should be arranged from the highest median rank to lowest median rank ("highest" is actually the smallest numer, eg. 1 = best). After you're finished, think of AT LEAST one thing you could you do to make this graph better. HINTS: 1. Start with the `breed_rank_all` dataset and pivot it so year is a variable. 2. Use the `separate()` function to get year alone, and there's an extra argument in that function that can make it numeric. 3. For both datasets used, you'll need to `str_squish()` Breed before joining. 
   
+  
 ```{r}
-breed_rank_all %>% 
+breed_rank_all2 <- breed_rank_all %>% 
   pivot_longer(cols = starts_with("20"),
                names_to = "year",
                values_to = "value") %>% 
   separate(year, 
            into = c("year"),
-           convert = TRUE)  
+           convert = TRUE) %>% 
+  mutate(breed = str_squish(Breed))
 
-  #str_squish("Breed")
-  #left_join(breed_traits_total,
-            #by = "Breed")
+breed_top_20 <- breed_traits_total %>%
+  filter(rank_total>= 55) %>% 
+  mutate(breed = str_squish(Breed))
 
+new_data <-
+breed_top_20 %>% 
+left_join(breed_rank_all2,
+          by = "breed") %>% 
+  group_by(breed) %>% 
+  mutate(median_rank = median(value))
+  
+ggplot(new_data,aes(x =year, y =fct_reorder(breed,desc(median_rank)), color = value)) + 
+  geom_point()+geom_line()+
+  
+  labs(title = "Top 20 Dog Breeds by Total Ranking and Year", color = "Ranking per Year", x = "", y = "")
 ```
   
+>Breeds that only have one data point should not be included in the graph because it does not have enough information to create a valid total ranking.
+
   19. Create your own! Requirements: use a `join` or `pivot` function (or both, if you'd like), a `str_XXX()` function, and a `fct_XXX()` function to create a graph using any of the dog datasets. One suggestion is to try to improve the graph you created for the Tidy Tuesday assignment. If you want an extra challenge, find a way to use the dog images in the `breed_rank_all` file - check out the `ggimage` library and [this resource](https://wilkelab.org/ggtext/) for putting images as labels.
   
-```{r}
+```{r, fig.height=2, fig.width=5}
 breed_traits_modeling <- breed_traits %>%
   filter(`Coat Length` %in% c("Medium", "Long"), `Coat Type` %in% c("Smooth", "Silky")) %>% 
   mutate(desirable_traits = rowSums(.[c(10,13,14)])) %>% 
@@ -371,13 +405,11 @@ breed_traits_modeling
 breed_traits_total
 
 breed_traits_total %>% 
-  right_join(breed_traits_modeling) %>% 
-  mutate(Breed_upper = str_to_upper(Breed)) %>% 
+  right_join(breed_traits_modeling) %>%
   ggplot(aes(x = rank_total, y = desirable_traits))+
-  geom_point(aes(color = Breed_upper))
-  
-
-
+  geom_point(aes(color = fct_reorder(Breed, rank_total)))+
+  labs(title = "Most Well-Rounded Dog Breeds for Modeling", x = str_to_upper("Total Ranking"), y = str_to_upper("Modeling Desirable Traits"), color = "Dog Breed")
+ 
  
   
 ```
